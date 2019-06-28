@@ -65,7 +65,6 @@ class MMR(object):
             self.last_pos += 1
             left_pos = self.last_pos - 2 ** (height + 1)
             right_pos = left_pos + sibling_offset(height)
-            # print('node pos', pos, 'left' , left_pos, 'right', right_pos)
             hasher = self._hasher()
             # parent hash
             hasher.update(self.pos_hash[left_pos])
@@ -135,7 +134,7 @@ class MMR(object):
                 # goto parent node
                 pos += 2 ** (height + 1)
             height += 1
-        return proof
+        return MerkleProof(mmr_size=self.last_pos + 1, proof=proof)
 
     def get_hash(self, pos: int, height: int) -> bin:
         """
@@ -161,45 +160,55 @@ class MMR(object):
         if right is not None:
             hasher.update(right)
         hash = hasher.digest()
-        logging.debug('get_hash', pos, height, hash)
+        logging.debug('get_hash %s %s %s', pos, height, hash)
         return hash
 
-    def verify_proof(self, root: bin, leaves: int, leaf_pos: int,
-                     elem: bin,
-                     merkle_proof: [bin]) -> bool:
-        height, _pos = left_peak_height_pos(self.last_pos + 1)
+class MerkleProof(object):
+    def __init__(self, mmr_size: int, proof: [bin]):
+        self.mmr_size = mmr_size
+        self.proof = proof
+
+    def _hasher(self) -> bin:
+        return hashlib.sha256()
+
+    def verify(self, root: bin, pos: int, elem: bin) -> bool:
+        height, _pos = left_peak_height_pos(self.mmr_size)
         # proof is log(n), exactly is our height + 1
-        if len(merkle_proof) != height + 1:
+        if len(self.proof) != height + 1:
             raise ValueError("invalid proof size")
         hasher = self._hasher()
         hasher.update(elem)
         elem_hash = hasher.digest()
-        for (proof_pos, proof) in merkle_proof:
+        height = 0
+        logging.debug('proof is %s', self.proof)
+        logging.debug('9 is %s', self.mmr.pos_hash[9])
+        logging.debug('13 is %s', self.mmr.pos_hash[13])
+        logging.debug('14 is %s', self.mmr.pos_hash[14])
+        logging.debug('30 is %s', self.mmr.get_hash(30,4))
+        for (proof_pos, proof) in self.proof:
             hasher = self._hasher()
-            if leaf_pos % 2 == 0:
-                logging.debug('left', leaf_pos)
-                # we are in left child
-                hasher.update(elem_hash)
-                hasher.update(proof)
-                logging.debug('left child is', elem_hash)
-                logging.debug('right child is', proof)
-            else:
-                logging.debug('right', leaf_pos)
-                logging.debug('proof', proof)
-                logging.debug('9 is ', self.pos_hash[9])
-                logging.debug('13 is ', self.pos_hash[13])
-                logging.debug('14 is ', self.pos_hash[14])
-                logging.debug('30 is ', self.get_hash(30,4))
+            pos_heigh = tree_height(pos)
+            next_heigh = tree_height(pos + 1)
+            if next_heigh > pos_heigh:
+                logging.debug('right %s', pos)
+                logging.debug('proof %s', proof)
                 # we are in right child
                 hasher.update(proof)
                 hasher.update(elem_hash)
-                logging.debug('left child is', proof)
-                logging.debug('right child is', elem_hash)
+                pos += 1
+                logging.debug('left child is %s', proof)
+                logging.debug('right child is %s', elem_hash)
+            else:
+                logging.debug('left %s', pos)
+                # we are in left child
+                hasher.update(elem_hash)
+                hasher.update(proof)
+                logging.debug('left child is %s', elem_hash)
+                logging.debug('right child is %s', proof)
+                pos += 2 ** (height + 1)
             elem_hash = hasher.digest()
-            logging.debug('----parent is', proof_pos, elem_hash, leaf_pos, leaves)
-            # reduce pos and leaves to our subtree
-            leaf_pos = leaf_pos // 2
-            leaves = leaves // 2
+            height += 1
+            logging.debug('----parent is %s %s %s', proof_pos, elem_hash, pos)
         return elem_hash == root
 
 
@@ -209,11 +218,11 @@ def test_mmr():
         mmr.add(i.to_bytes(4, 'little'))
     merkle_root = mmr.get_root()
     proof = mmr.gen_proof(8)
-    logging.debug('proof', proof)
+    logging.debug('proof %s', proof)
     elem = 5
-    result = mmr.verify_proof(root=merkle_root, leaves=11, leaf_pos=5,
-                              elem=elem.to_bytes(4, 'little'),
-                              merkle_proof=proof)
+    proof.mmr = mmr
+    result = proof.verify(root=merkle_root, pos=8,
+                          elem=elem.to_bytes(4, 'little'))
     assert(result)
 
 
