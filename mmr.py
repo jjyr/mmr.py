@@ -28,13 +28,14 @@ def tree_height(pos: int) -> int:
     return pos.bit_length() - 1
 
 
+# get left or right sibling offset by height
 def sibling_offset(height) -> int:
     return 2 ** (height + 1) - 1
 
 
 def get_peaks(mmr_size) -> [int]:
     """
-    return peaks from left to right
+    return peaks positions from left to right
     """
     poss = []
     height, pos = left_peak_height_pos(mmr_size)
@@ -60,20 +61,25 @@ def get_right_peak(height, pos, mmr_size):
 
 # TODO optimize this
 def left_peak_height_pos(mmr_size: int) -> (int, int):
+    """
+    calculate left peak height and pos
+    """
     height = 0
     prev_pos = 0
-    # try to get left peak
-    while True:
+    pos = sibling_offset(height) - 1
+    # once pos is out of length we consider previous pos is left peak
+    while pos < mmr_size:
+        height += 1
+        prev_pos = pos
+        # try to get left peak
         pos = sibling_offset(height) - 1
-        # once pos is out of length we consider previous pos is left peak
-        if pos > mmr_size - 1:
-            return (height - 1, prev_pos)
-        else:
-            height += 1
-            prev_pos = pos
+    return (height - 1, prev_pos)
 
 
 class MMR(object):
+    """
+    MMR
+    """
     def __init__(self):
         self.last_pos = -1
         self.pos_hash = {}
@@ -84,28 +90,38 @@ class MMR(object):
     def _int_to_bytes(self, pos):
         return pos.to_bytes(4, 'little')
 
-    def add(self, v: bin):
+    def add(self, elem: bin):
+        """
+        Insert a new leaf, v is a binary value
+        """
         self.last_pos += 1
         hasher = self._hasher()
-        hasher.update(v)
+        hasher.update(elem)
         # store hash
         self.pos_hash[self.last_pos] = hasher.digest()
         height = 0
-        # try merge same sub trees
+        # merge same sub trees
+        # if next pos height is higher implies we are in right children
+        # and sub trees can be merge
         while tree_height(self.last_pos + 1) > height:
-            # calculate pffset of current node and previous sibling
+            # increase pos cursor
             self.last_pos += 1
+            # calculate pos of left child and right child
             left_pos = self.last_pos - 2 ** (height + 1)
             right_pos = left_pos + sibling_offset(height)
             hasher = self._hasher()
-            # parent hash
+            # calculate parent hash
             hasher.update(self.pos_hash[left_pos])
             hasher.update(self.pos_hash[right_pos])
             self.pos_hash[self.last_pos] = hasher.digest()
             height += 1
 
     def get_root(self) -> bin:
+        """
+        MMR root
+        """
         peaks = get_peaks(self.last_pos + 1)
+        # bag all rhs peaks, which is exact root
         root = self._bag_rhs_peaks(0, peaks)
         if root is not None:
             return root[1]
@@ -126,14 +142,15 @@ class MMR(object):
         height, _pos = left_peak_height_pos(self.last_pos + 1)
         proof = []
         height = 0
-        # while len(proof) < proof_size:
+        # construct merkle proof of one peak
         while pos <= self.last_pos:
             pos_height = tree_height(pos)
             next_height = tree_height(pos + 1)
             if next_height > pos_height:
                 # get left child sib
                 sib = pos - sibling_offset(height)
-                if sib not in self.pos_hash:
+                # break if sib is out of mmr
+                if sib > self.last_pos:
                     break
                 proof.append((sib, self.get_hash(sib, height)))
                 # goto parent node
@@ -141,18 +158,21 @@ class MMR(object):
             else:
                 # get right child
                 sib = pos + sibling_offset(height)
-                if sib not in self.pos_hash:
+                # break if sib is out of mmr
+                if sib > self.last_pos:
                     break
                 proof.append((sib, self.get_hash(sib, height)))
                 # goto parent node
                 pos += 2 ** (height + 1)
             height += 1
+        # now pos is peak of the mountain(because pos can't find a sibling)
         peak_pos = pos
         peaks = get_peaks(self.last_pos + 1)
         # bagging rhs peaks into one hash
         rhs_peak_hash = self._bag_rhs_peaks(peak_pos, peaks)
         if rhs_peak_hash is not None:
             proof.append(rhs_peak_hash)
+        # insert lhs peaks
         proof.extend(reversed(self._lhs_peaks(peak_pos, peaks)))
         return MerkleProof(mmr_size=self.last_pos + 1, proof=proof)
 
@@ -203,6 +223,9 @@ class MMR(object):
 
 
 class MerkleProof(object):
+    """
+    MerkleProof, used for verify a proof
+    """
     def __init__(self, mmr_size: int, proof: [bin]):
         self.mmr_size = mmr_size
         self.proof = proof
@@ -211,6 +234,12 @@ class MerkleProof(object):
         return hashlib.sha256()
 
     def verify(self, root: bin, pos: int, elem: bin) -> bool:
+        """
+        verify proof
+        root - MMR root that generate this proof
+        pos - elem insertion pos
+        elem - elem
+        """
         peaks = get_peaks(self.mmr_size)
         hasher = self._hasher()
         hasher.update(elem)
