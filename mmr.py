@@ -3,7 +3,8 @@ Merkle Mountain Range
 """
 
 import hashlib
-import logging, sys
+import logging
+import sys
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
@@ -12,10 +13,12 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 def tree_height(pos: int) -> int:
     # convert from 0-based to 1-based position, see document
     pos += 1
+
     def all_ones(num: int) -> bool:
         return (1 << num.bit_length()) - 1 == num
+
     def jump_left(pos: int) -> int:
-        most_significant_bits =  1 << pos.bit_length() - 1
+        most_significant_bits = 1 << pos.bit_length() - 1
         return pos - (most_significant_bits - 1)
 
     # loop until we jump to all ones position, which is tree height
@@ -24,8 +27,10 @@ def tree_height(pos: int) -> int:
     # count all 1 bits
     return pos.bit_length() - 1
 
+
 def sibling_offset(height) -> int:
     return 2 ** (height + 1) - 1
+
 
 # TODO optimize this
 def left_peak_height_pos(mmr_size: int) -> (int, int):
@@ -40,6 +45,7 @@ def left_peak_height_pos(mmr_size: int) -> (int, int):
         else:
             height += 1
             prev_pos = pos
+
 
 class MMR(object):
     def __init__(self):
@@ -163,6 +169,7 @@ class MMR(object):
         logging.debug('get_hash %s %s %s', pos, height, hash)
         return hash
 
+
 class MerkleProof(object):
     def __init__(self, mmr_size: int, proof: [bin]):
         self.mmr_size = mmr_size
@@ -184,7 +191,7 @@ class MerkleProof(object):
         logging.debug('9 is %s', self.mmr.pos_hash[9])
         logging.debug('13 is %s', self.mmr.pos_hash[13])
         logging.debug('14 is %s', self.mmr.pos_hash[14])
-        logging.debug('30 is %s', self.mmr.get_hash(30,4))
+        logging.debug('30 is %s', self.mmr.get_hash(30, 4))
         for (proof_pos, proof) in self.proof:
             hasher = self._hasher()
             pos_heigh = tree_height(pos)
