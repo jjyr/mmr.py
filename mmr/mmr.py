@@ -59,7 +59,6 @@ def get_right_peak(height, pos, mmr_size):
     return (height, pos)
 
 
-# TODO optimize this
 def left_peak_height_pos(mmr_size: int) -> (int, int):
     """
     calculate left peak height and pos
@@ -292,16 +291,21 @@ class MerkleProof(object):
 
 
 def test_mmr():
+    def serialize(i):
+        return i.to_bytes(4, 'little')
+
     mmr = MMR()
-    positions = [mmr.add(i.to_bytes(4, 'little')) for i in range(0, 11)]
+    # push 0..11 into MMR, and record MMR positions
+    positions = [mmr.add(serialize(i)) for i in range(0, 11)]
     merkle_root = mmr.get_root()
+    # proof
     elem = 5
     pos = positions[elem]
+    # generate proof for 5
     proof = mmr.gen_proof(pos)
-    logging.debug('proof %s', proof)
-    proof.mmr = mmr
+    # verify proof
     result = proof.verify(root=merkle_root, pos=pos,
-                          elem=elem.to_bytes(4, 'little'))
+                          elem=serialize(elem))
     assert(result)
 
 
