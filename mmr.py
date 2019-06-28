@@ -90,7 +90,7 @@ class MMR(object):
     def _int_to_bytes(self, pos):
         return pos.to_bytes(4, 'little')
 
-    def add(self, elem: bin):
+    def add(self, elem: bin) -> int:
         """
         Insert a new leaf, v is a binary value
         """
@@ -100,6 +100,7 @@ class MMR(object):
         # store hash
         self.pos_hash[self.last_pos] = hasher.digest()
         height = 0
+        pos = self.last_pos
         # merge same sub trees
         # if next pos height is higher implies we are in right children
         # and sub trees can be merge
@@ -115,6 +116,7 @@ class MMR(object):
             hasher.update(self.pos_hash[right_pos])
             self.pos_hash[self.last_pos] = hasher.digest()
             height += 1
+        return pos
 
     def get_root(self) -> bin:
         """
@@ -291,14 +293,14 @@ class MerkleProof(object):
 
 def test_mmr():
     mmr = MMR()
-    for i in range(0, 11):
-        mmr.add(i.to_bytes(4, 'little'))
+    positions = [mmr.add(i.to_bytes(4, 'little')) for i in range(0, 11)]
     merkle_root = mmr.get_root()
-    proof = mmr.gen_proof(8)
-    logging.debug('proof %s', proof)
     elem = 5
+    pos = positions[elem]
+    proof = mmr.gen_proof(pos)
+    logging.debug('proof %s', proof)
     proof.mmr = mmr
-    result = proof.verify(root=merkle_root, pos=8,
+    result = proof.verify(root=merkle_root, pos=pos,
                           elem=elem.to_bytes(4, 'little'))
     assert(result)
 
