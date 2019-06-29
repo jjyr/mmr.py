@@ -3,3 +3,4 @@ mmr.py.egg-info/
 __pycache__/
 build/
 *.pyc
+.mypy_cache/

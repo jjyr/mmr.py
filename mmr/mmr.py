@@ -2,6 +2,7 @@
 Merkle Mountain Range
 """
 
+from typing import List, Tuple, Optional
 import hashlib
 
 
@@ -34,7 +35,7 @@ def sibling_offset(height) -> int:
     return (2 << height) - 1
 
 
-def get_peaks(mmr_size) -> [int]:
+def get_peaks(mmr_size) -> List[int]:
     """
     return peaks positions from left to right
     """
@@ -64,7 +65,7 @@ def get_peaks(mmr_size) -> [int]:
     return poss
 
 
-def left_peak_height_pos(mmr_size: int) -> (int, int):
+def left_peak_height_pos(mmr_size: int) -> Tuple[int, int]:
     """
     find left peak
     return (left peak height, pos)
@@ -103,13 +104,13 @@ class MMR(object):
         self.last_pos = -1
         self.pos_hash = {}
 
-    def _hasher(self) -> bin:
+    def _hasher(self):
         return hashlib.sha256()
 
     def _int_to_bytes(self, pos):
         return pos.to_bytes(4, 'little')
 
-    def add(self, elem: bin) -> int:
+    def add(self, elem: bytes) -> int:
         """
         Insert a new leaf, v is a binary value
         """
@@ -137,7 +138,7 @@ class MMR(object):
             height += 1
         return pos
 
-    def get_root(self) -> bin:
+    def get_root(self) -> Optional[bytes]:
         """
         MMR root
         """
@@ -149,7 +150,7 @@ class MMR(object):
         else:
             return None
 
-    def gen_proof(self, pos: int) -> [bin]:
+    def gen_proof(self, pos: int) -> 'MerkleProof':
         """
         generate a merkle proof
         1. generate merkle tree proof for pos
@@ -197,7 +198,8 @@ class MMR(object):
         proof.extend(reversed(self._lhs_peaks(peak_pos, peaks)))
         return MerkleProof(mmr_size=self.last_pos + 1, proof=proof)
 
-    def _bag_rhs_peaks(self, peak_pos: int, peaks: [int]):
+    def _bag_rhs_peaks(self, peak_pos: int, peaks: List[int]
+                       ) -> Optional[Tuple[int, bytes]]:
         rhs_peak_hashes = [(p, self.pos_hash[p]) for p in peaks
                            if p > peak_pos]
         while len(rhs_peak_hashes) > 1:
@@ -212,7 +214,8 @@ class MMR(object):
         else:
             return None
 
-    def _lhs_peaks(self, peak_pos: int, peaks: [int]):
+    def _lhs_peaks(self, peak_pos: int, peaks: List[int]
+                   ) -> List[Tuple[int, bytes]]:
         return [(p, self.pos_hash[p]) for p in peaks if p < peak_pos]
 
 
@@ -220,14 +223,14 @@ class MerkleProof(object):
     """
     MerkleProof, used for verify a proof
     """
-    def __init__(self, mmr_size: int, proof: [bin]):
+    def __init__(self, mmr_size: int, proof: List[Tuple[int, bytes]]):
         self.mmr_size = mmr_size
         self.proof = proof
 
-    def _hasher(self) -> bin:
+    def _hasher(self):
         return hashlib.sha256()
 
-    def verify(self, root: bin, pos: int, elem: bin) -> bool:
+    def verify(self, root: bytes, pos: int, elem: bytes) -> bool:
         """
         verify proof
         root - MMR root that generate this proof
