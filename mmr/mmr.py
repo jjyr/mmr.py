@@ -8,9 +8,13 @@ import sys
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
-# https://github.com/mimblewimble/grin/blob/0ff6763ee64e5a14e70ddd4642b99789a1648a32/core/src/core/pmmr.rs#L606
-# use binary expression to find tree height(all one position number)
 def tree_height(pos: int) -> int:
+    """
+    Explains:
+    https://github.com/mimblewimble/grin/blob/0ff6763ee64e5a14e70ddd4642b99789a1648a32/core/src/core/pmmr.rs#L606
+    use binary expression to find tree height(all one position number)
+    return pos height
+    """
     # convert from 0-based to 1-based position, see document
     pos += 1
 
@@ -61,17 +65,32 @@ def get_right_peak(height, pos, mmr_size):
 
 def left_peak_height_pos(mmr_size: int) -> (int, int):
     """
-    calculate left peak height and pos
+    find left peak
+    return (left peak height, pos)
     """
+    def get_left_pos(height):
+        """
+        convert height to binary express, then minus 1 to get 0 based pos
+        explain:
+        https://github.com/mimblewimble/grin/blob/master/doc/mmr.md#structure
+        https://github.com/mimblewimble/grin/blob/0ff6763ee64e5a14e70ddd4642b99789a1648a32/core/src/core/pmmr.rs#L606
+        For example:
+        height = 2
+        # use one-based encoding, mean that left node is all one-bits
+        # 0b1 is 0 pos, 0b11 is 2 pos 0b111 is 6 pos
+        one_based_binary_encoding = 0b111
+        pos = 0b111 - 1 = 6
+        """
+        return (1 << height + 1) - 2
     height = 0
     prev_pos = 0
-    pos = sibling_offset(height) - 1
-    # once pos is out of length we consider previous pos is left peak
+    pos = get_left_pos(height)
+    # increase height and get most left pos of tree
+    # once pos is out of mmr_size we consider previous pos is left peak
     while pos < mmr_size:
         height += 1
         prev_pos = pos
-        # try to get left peak
-        pos = sibling_offset(height) - 1
+        pos = get_left_pos(height)
     return (height - 1, prev_pos)
 
 
