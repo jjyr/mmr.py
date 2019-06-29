@@ -31,7 +31,7 @@ def tree_height(pos: int) -> int:
 
 # get left or right sibling offset by height
 def sibling_offset(height) -> int:
-    return 2 ** (height + 1) - 1
+    return (2 << height) - 1
 
 
 def get_peaks(mmr_size) -> [int]:
@@ -47,8 +47,11 @@ def get_peaks(mmr_size) -> [int]:
         pos += sibling_offset(height)
         # jump to left child
         while pos > mmr_size - 1:
-            pos -= 2 ** height
             height -= 1
+            if height < 0:
+                # no right peak exists
+                return (height, None)
+            pos -= 2 << height
         return (height, pos)
 
     poss = []
@@ -124,7 +127,7 @@ class MMR(object):
             # increase pos cursor
             self.last_pos += 1
             # calculate pos of left child and right child
-            left_pos = self.last_pos - 2 ** (height + 1)
+            left_pos = self.last_pos - (2 << height)
             right_pos = left_pos + sibling_offset(height)
             hasher = self._hasher()
             # calculate parent hash
@@ -170,7 +173,7 @@ class MMR(object):
                 # break if sib is out of mmr
                 if sib > self.last_pos:
                     break
-                proof.append((sib, self.get_hash(sib, height)))
+                proof.append((sib, self.pos_hash[sib]))
                 # goto parent node
                 pos += 1
             else:
@@ -179,9 +182,9 @@ class MMR(object):
                 # break if sib is out of mmr
                 if sib > self.last_pos:
                     break
-                proof.append((sib, self.get_hash(sib, height)))
+                proof.append((sib, self.pos_hash[sib]))
                 # goto parent node
-                pos += 2 ** (height + 1)
+                pos += 2 << height
             height += 1
         # now pos is peak of the mountain(because pos can't find a sibling)
         peak_pos = pos
@@ -211,32 +214,6 @@ class MMR(object):
 
     def _lhs_peaks(self, peak_pos: int, peaks: [int]):
         return [(p, self.pos_hash[p]) for p in peaks if p < peak_pos]
-
-    def get_hash(self, pos: int, height: int) -> bin:
-        """
-        get hash from pos,
-        pos must less than 2 ** (height + 1)
-        """
-        self_height, _pos = left_peak_height_pos(self.last_pos + 1)
-        assert(pos < 2 ** (self_height + 2) - 1)
-        if self.pos_hash.get(pos) is not None:
-            return self.pos_hash[pos]
-        elif height == 0:
-            return None
-        # we hit a virtual node(not recorded in inner)
-        # find left child
-        left_pos = pos - 2 ** height
-        right_pos = left_pos + sibling_offset(height - 1)
-        left = self.get_hash(left_pos, height - 1)
-        if left is None:
-            return None
-        right = self.get_hash(right_pos, height - 1)
-        hasher = self._hasher()
-        hasher.update(left)
-        if right is not None:
-            hasher.update(right)
-        hash = hasher.digest()
-        return hash
 
 
 class MerkleProof(object):
@@ -288,7 +265,7 @@ class MerkleProof(object):
                 # we are in left child
                 hasher.update(elem_hash)
                 hasher.update(proof)
-                pos += 2 ** (height + 1)
+                pos += 2 << height
             elem_hash = hasher.digest()
             height += 1
         return elem_hash == root
