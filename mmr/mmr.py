@@ -38,26 +38,27 @@ def get_peaks(mmr_size) -> [int]:
     """
     return peaks positions from left to right
     """
+    def get_right_peak(height, pos, mmr_size):
+        """
+        find next right peak
+        peak not exsits if height is -1
+        """
+        # jump to right sibling
+        pos += sibling_offset(height)
+        # jump to left child
+        while pos > mmr_size - 1:
+            pos -= 2 ** height
+            height -= 1
+        return (height, pos)
+
     poss = []
     height, pos = left_peak_height_pos(mmr_size)
     poss.append(pos)
     while height > 0:
         height, pos = get_right_peak(height, pos, mmr_size)
-        poss.append(pos)
+        if height > 0:
+            poss.append(pos)
     return poss
-
-
-def get_right_peak(height, pos, mmr_size):
-    """
-    find next right peak
-    """
-    # jump to right sibling
-    pos += sibling_offset(height)
-    # jump to left child
-    while pos > mmr_size - 1:
-        pos -= 2 ** height
-        height -= 1
-    return (height, pos)
 
 
 def left_peak_height_pos(mmr_size: int) -> (int, int):
