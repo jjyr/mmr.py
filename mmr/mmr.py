@@ -3,9 +3,6 @@ Merkle Mountain Range
 """
 
 import hashlib
-import logging
-import sys
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 
 def tree_height(pos: int) -> int:
@@ -238,7 +235,6 @@ class MMR(object):
         if right is not None:
             hasher.update(right)
         hash = hasher.digest()
-        logging.debug('get_hash %s %s %s', pos, height, hash)
         return hash
 
 
@@ -265,7 +261,6 @@ class MerkleProof(object):
         hasher.update(elem)
         elem_hash = hasher.digest()
         height = 0
-        logging.debug('proof is %s', self.proof)
         for (proof_pos, proof) in self.proof:
             hasher = self._hasher()
             # verify bagging peaks
@@ -284,28 +279,17 @@ class MerkleProof(object):
             pos_height = tree_height(pos)
             next_height = tree_height(pos + 1)
             if next_height > pos_height:
-                logging.debug('right %s', pos)
-                logging.debug('proof %s', proof)
                 # we are in right child
                 hasher.update(proof)
                 hasher.update(elem_hash)
                 pos += 1
-                logging.debug('left child is %s', proof)
-                logging.debug('right child is %s', elem_hash)
             else:
-                logging.debug('left %s', pos)
                 # we are in left child
                 hasher.update(elem_hash)
                 hasher.update(proof)
-                logging.debug('left child is %s', elem_hash)
-                logging.debug('right child is %s', proof)
                 pos += 2 ** (height + 1)
             elem_hash = hasher.digest()
             height += 1
-            logging.debug('----parent is %s %s %s', proof_pos, elem_hash, pos)
-        logging.debug('----parent is %s %s %s', proof_pos, elem_hash, pos)
-        logging.debug(elem_hash)
-        logging.debug(root)
         return elem_hash == root
 
 
