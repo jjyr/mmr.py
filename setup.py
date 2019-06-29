@@ -8,6 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="jjy",
     author_email="jjyruby@gmail.com",
+    test_suite="tests",
     description="Merkle Mountain Range in python",
     long_description=long_description,
     long_description_content_type="text/markdown",
