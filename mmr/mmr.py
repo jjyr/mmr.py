@@ -60,7 +60,7 @@ def get_peaks(mmr_size) -> List[int]:
     poss.append(pos)
     while height > 0:
         height, pos = get_right_peak(height, pos, mmr_size)
-        if height > 0:
+        if height >= 0:
             poss.append(pos)
     return poss
 

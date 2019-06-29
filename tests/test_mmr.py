@@ -33,8 +33,12 @@ class MMRTest(unittest.TestCase):
         self.run_mmr(8, 5)
 
     def test_mmr_first_elem(self):
-        # one peak
+        # first elem
         self.run_mmr(11, 0)
+
+    def test_mmr_last_elem(self):
+        # last elem
+        self.run_mmr(11, 10)
 
 
 if __name__ == '__main__':
