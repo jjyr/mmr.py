@@ -33,6 +33,8 @@ def test_mmr():
 test_mmr()
 ```
 
+See [tests](tests) to learn more.
+
 ## License
 
 MIT
