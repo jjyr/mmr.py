@@ -139,11 +139,7 @@ class MMR(object):
         """
         peaks = get_peaks(self.last_pos + 1)
         # bag all rhs peaks, which is exact root
-        root = self._bag_rhs_peaks(0, peaks)
-        if root is not None:
-            return root[1]
-        else:
-            return None
+        return self._bag_rhs_peaks(0, peaks)
 
     def gen_proof(self, pos: int) -> 'MerkleProof':
         """
@@ -168,7 +164,7 @@ class MMR(object):
                 # break if sib is out of mmr
                 if sib > self.last_pos:
                     break
-                proof.append((sib, self.pos_hash[sib]))
+                proof.append(self.pos_hash[sib])
                 # goto parent node
                 pos += 1
             else:
@@ -177,7 +173,7 @@ class MMR(object):
                 # break if sib is out of mmr
                 if sib > self.last_pos:
                     break
-                proof.append((sib, self.pos_hash[sib]))
+                proof.append(self.pos_hash[sib])
                 # goto parent node
                 pos += 2 << height
             height += 1
@@ -195,24 +191,24 @@ class MMR(object):
                            hasher=self._hasher)
 
     def _bag_rhs_peaks(self, peak_pos: int, peaks: List[int]
-                       ) -> Optional[Tuple[int, bytes]]:
-        rhs_peak_hashes = [(p, self.pos_hash[p]) for p in peaks
+                       ) -> Optional[bytes]:
+        rhs_peak_hashes = [self.pos_hash[p] for p in peaks
                            if p > peak_pos]
         while len(rhs_peak_hashes) > 1:
             peak_r = rhs_peak_hashes.pop()
             peak_l = rhs_peak_hashes.pop()
             hasher = self._hasher()
-            hasher.update(peak_r[1])
-            hasher.update(peak_l[1])
-            rhs_peak_hashes.append((peak_r[0] + peak_l[0], hasher.digest()))
+            hasher.update(peak_r)
+            hasher.update(peak_l)
+            rhs_peak_hashes.append(hasher.digest())
         if len(rhs_peak_hashes) > 0:
             return rhs_peak_hashes[0]
         else:
             return None
 
     def _lhs_peaks(self, peak_pos: int, peaks: List[int]
-                   ) -> List[Tuple[int, bytes]]:
-        return [(p, self.pos_hash[p]) for p in peaks if p < peak_pos]
+                   ) -> List[bytes]:
+        return [self.pos_hash[p] for p in peaks if p < peak_pos]
 
 
 class MerkleProof(object):
@@ -220,7 +216,7 @@ class MerkleProof(object):
     MerkleProof, used for verify a proof
     """
     def __init__(self, mmr_size: int,
-                 proof: List[Tuple[int, bytes]],
+                 proof: List[bytes],
                  hasher):
         self.mmr_size = mmr_size
         self.proof = proof
@@ -238,7 +234,7 @@ class MerkleProof(object):
         hasher.update(elem)
         elem_hash = hasher.digest()
         height = 0
-        for (proof_pos, proof) in self.proof:
+        for proof in self.proof:
             hasher = self._hasher()
             # verify bagging peaks
             if pos in peaks:
