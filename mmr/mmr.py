@@ -161,7 +161,6 @@ class MMR(object):
         For peaks: P1, P2, P3, P4, P5, we proof a P4 leaf
         [P4 merkle proof.., P5, P3, P2, P1]
         """
-        height, _pos = left_peak_height_pos(self.last_pos + 1)
         proof = []
         height = 0
         # construct merkle proof of one peak
