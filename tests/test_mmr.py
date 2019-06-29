@@ -3,11 +3,14 @@ from mmr import MMR
 
 
 class MMRTest(unittest.TestCase):
-    def run_mmr(self, count, proof_elem):
+    def run_mmr(self, count, proof_elem, hasher=None):
         def serialize(i):
             return i.to_bytes(4, 'little')
 
-        mmr = MMR()
+        if hasher is None:
+            mmr = MMR()
+        else:
+            mmr = MMR(hasher=hasher)
         # push 0..count into MMR, and record MMR positions
         positions = [mmr.add(serialize(i)) for i in range(0, count)]
         merkle_root = mmr.get_root()
@@ -39,6 +42,10 @@ class MMRTest(unittest.TestCase):
     def test_mmr_last_elem(self):
         # last elem
         self.run_mmr(11, 10)
+
+    def test_customize_hasher(self):
+        import hashlib
+        self.run_mmr(11, 5, hasher=hashlib.sha3_256)
 
 
 if __name__ == '__main__':

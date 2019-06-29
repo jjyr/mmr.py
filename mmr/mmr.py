@@ -100,15 +100,10 @@ class MMR(object):
     """
     MMR
     """
-    def __init__(self):
+    def __init__(self, hasher=hashlib.blake2b):
         self.last_pos = -1
         self.pos_hash = {}
-
-    def _hasher(self):
-        return hashlib.sha256()
-
-    def _int_to_bytes(self, pos):
-        return pos.to_bytes(4, 'little')
+        self._hasher = hasher
 
     def add(self, elem: bytes) -> int:
         """
@@ -195,7 +190,9 @@ class MMR(object):
             proof.append(rhs_peak_hash)
         # insert lhs peaks
         proof.extend(reversed(self._lhs_peaks(peak_pos, peaks)))
-        return MerkleProof(mmr_size=self.last_pos + 1, proof=proof)
+        return MerkleProof(mmr_size=self.last_pos + 1,
+                           proof=proof,
+                           hasher=self._hasher)
 
     def _bag_rhs_peaks(self, peak_pos: int, peaks: List[int]
                        ) -> Optional[Tuple[int, bytes]]:
@@ -222,12 +219,12 @@ class MerkleProof(object):
     """
     MerkleProof, used for verify a proof
     """
-    def __init__(self, mmr_size: int, proof: List[Tuple[int, bytes]]):
+    def __init__(self, mmr_size: int,
+                 proof: List[Tuple[int, bytes]],
+                 hasher):
         self.mmr_size = mmr_size
         self.proof = proof
-
-    def _hasher(self):
-        return hashlib.sha256()
+        self._hasher = hasher
 
     def verify(self, root: bytes, pos: int, elem: bytes) -> bool:
         """
