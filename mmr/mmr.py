@@ -140,7 +140,7 @@ class MMR(object):
         """
         peaks = get_peaks(self.last_pos + 1)
         # bag all rhs peaks, which is exact root
-        return self._bag_rhs_peaks(0, peaks)
+        return self._bag_rhs_peaks(-1, peaks)
 
     def gen_proof(self, pos: int) -> 'MerkleProof':
         """

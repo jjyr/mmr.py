@@ -43,6 +43,13 @@ class MMRTest(unittest.TestCase):
         # last elem
         self.run_mmr(11, 10)
 
+    def test_mmr_one_elem(self):
+        self.run_mmr(1, 0)
+
+    def test_mmr_two_elems(self):
+        self.run_mmr(2, 0)
+        self.run_mmr(2, 1)
+
     def test_customize_hasher(self):
         import hashlib
         self.run_mmr(11, 5, hasher=hashlib.sha3_256)
