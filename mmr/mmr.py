@@ -6,8 +6,9 @@ from typing import List, Tuple, Optional
 import hashlib
 
 
-def tree_height(pos: int) -> int:
+def tree_pos_height(pos: int) -> int:
     """
+    calculate pos height in tree
     Explains:
     https://github.com/mimblewimble/grin/blob/0ff6763ee64e5a14e70ddd4642b99789a1648a32/core/src/core/pmmr.rs#L606
     use binary expression to find tree height(all one position number)
@@ -119,7 +120,7 @@ class MMR(object):
         # merge same sub trees
         # if next pos height is higher implies we are in right children
         # and sub trees can be merge
-        while tree_height(self.last_pos + 1) > height:
+        while tree_pos_height(self.last_pos + 1) > height:
             # increase pos cursor
             self.last_pos += 1
             # calculate pos of left child and right child
@@ -156,8 +157,8 @@ class MMR(object):
         height = 0
         # construct merkle proof of one peak
         while pos <= self.last_pos:
-            pos_height = tree_height(pos)
-            next_height = tree_height(pos + 1)
+            pos_height = tree_pos_height(pos)
+            next_height = tree_pos_height(pos + 1)
             if next_height > pos_height:
                 # get left child sib
                 sib = pos - sibling_offset(height)
@@ -249,8 +250,8 @@ class MerkleProof(object):
                 continue
 
             # verify merkle path
-            pos_height = tree_height(pos)
-            next_height = tree_height(pos + 1)
+            pos_height = tree_pos_height(pos)
+            next_height = tree_pos_height(pos + 1)
             if next_height > pos_height:
                 # we are in right child
                 hasher.update(proof)
