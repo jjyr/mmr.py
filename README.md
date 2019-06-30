@@ -4,7 +4,7 @@ Merkle Mountain Range
 
 ## Install
 
-`pip3 install mmr.py`
+`pip3 install -U git+https://github.com/jjyr/mmr.py.git`
 
 ## Example
 
