@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mmr.py",
-    version="0.0.3",
+    version="0.0.4",
     author="jjy",
     author_email="jjyruby@gmail.com",
     test_suite="tests",
